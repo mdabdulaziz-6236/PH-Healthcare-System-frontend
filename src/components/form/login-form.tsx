@@ -3,26 +3,67 @@
 import { useForm } from "@tanstack/react-form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator,
+} from "../ui/field";
 import { loginSchema } from "@/validation";
 import { useState } from "react";
 import { Eye, EyeClosed } from "lucide-react";
+import {  useLogin } from "@/hooks";
+import { useRouter } from "next/navigation";
+import { toast } from "../ui/toast";
+import { Spinner } from "../ui/spinner";
+import Link from "next/link";
+import GoogleLoginComponent from "../modules/ google-login/GoogleLoginComponent";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+
+  const { mutate: login, isPending: loginPending } = useLogin();
+
 
   const form = useForm({
     defaultValues: {
-      email: "",
-      password: "",
+      email: "superadmin@gmail.com",
+      password: "Super@admin12345",
     },
     validators: {
       onSubmit: loginSchema,
     },
     onSubmit: ({ value }) => {
-      console.log(value);
+      const loginData = {
+        email: value.email,
+        password: value.password,
+      };
+      login(loginData, {
+        onSuccess: (res) => {
+          console.log(res);
+          toast.add({
+            title: "Login Successful",
+            description: "Welcome back!",
+            type: "success",
+          });
+          router.push("/");
+        },
+        onError: (err) => {
+          console.log(err);
+          toast.add({
+            title: "Authorization Failure",
+            description:
+              err.message || "Something Went Wrong. Please try again.",
+            type: "error",
+          });
+        },
+      });
     },
   });
+
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -86,7 +127,11 @@ export default function LoginForm() {
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
                     >
-                      {showPassword ? <EyeClosed className="size-5"/> : <Eye  className="size-5"/>}
+                      {showPassword ? (
+                        <EyeClosed className="size-5" />
+                      ) : (
+                        <Eye className="size-5" />
+                      )}
                     </button>
                   </div>
 
@@ -95,9 +140,28 @@ export default function LoginForm() {
               );
             }}
           </form.Field>
-          <Button type="submit">Submit</Button>
+          <Button disabled={loginPending} type="submit">
+            {loginPending ? (
+              <>
+                <Spinner /> Submitting
+              </>
+            ) : (
+              "Submit"
+            )}
+          </Button>
         </FieldGroup>
       </form>
+      <FieldSeparator>Or continue with</FieldSeparator>
+            <GoogleLoginComponent/>
+      <div className="text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{" "}
+        <Link
+          href="/register"
+          className="font-medium underline underline-offset-4 hover:text-primary"
+        >
+          Register
+        </Link>
+      </div>
     </div>
   );
 }

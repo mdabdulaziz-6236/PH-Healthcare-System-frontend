@@ -1,7 +1,38 @@
+"use client";
+
+import Logo from "@/app/assets/svg/Logo";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
+import { useGetMe, useLogout } from "@/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
 const Header = () => {
+  const { data, isLoading } = useGetMe();
+  const { mutate: logout, isPending: logoutPending } = useLogout();
+  const queryClient = useQueryClient();
+
+  const handleLogout = () => {
+    logout(undefined, {
+      onSuccess: (res) => {
+        toast.add({
+          title: "Tata",
+          description: "Logged out successfully.",
+          type: "success",
+        });
+        queryClient.removeQueries({queryKey: ["user"]});  
+      },
+      onError: (err) => {
+        console.log(err);
+        toast.add({
+          title: "Logout Failed",
+          description: "Failed to log out.",
+          type: "error",
+        });
+      },
+    });
+  };
+
   const routes = [
     { name: "Home", url: "/" },
     { name: "About us", url: "/about-us" },
@@ -10,7 +41,10 @@ const Header = () => {
   return (
     <header className="w-full h-16 border border-b">
       <div className="flex justify-between items-center h-full max-w-7xl mx-auto">
-        <div>PH Healthcare</div>
+        <div className="flex items-center gap-2">
+          <Logo></Logo>
+          <span>PH Healthcare</span>
+        </div>
         <nav className="flex gap-5">
           {routes.map((route) => (
             <Link key={route.url} href={route.url}>
@@ -19,11 +53,20 @@ const Header = () => {
           ))}
         </nav>
         <div>
-          <Button
-            variant="outline"
-            render={<Link href={"/login"}>Login</Link>}
-            nativeButton={false}
-          ></Button>
+          {!isLoading && !data && (
+            <Button
+              variant="outline"
+              render={<Link href={"/login"}>Login</Link>}
+              nativeButton={false}
+            >
+              Login
+            </Button>
+          )}
+          {!isLoading && data && (
+            <Button variant="destructive" onClick={handleLogout}>
+              Logout
+            </Button>
+          )}
         </div>
       </div>
     </header>
